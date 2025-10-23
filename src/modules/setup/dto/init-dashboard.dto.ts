@@ -1,11 +1,10 @@
 import {
   IsAlphanumeric,
   IsEmail,
-  IsLowercase,
   IsOptional,
   IsString,
+  IsStrongPassword,
   Length,
-  MinLength,
   NotContains,
 } from 'class-validator';
 
@@ -23,7 +22,6 @@ export class InitDashboardDto {
   email: string;
 
   // Maybe víc? 12, 16?
-  @MinLength(8)
-  @IsString()
+  @IsStrongPassword({ minLength: 8 })
   password: string;
 }

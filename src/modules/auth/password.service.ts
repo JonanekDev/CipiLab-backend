@@ -11,7 +11,7 @@ export class PasswordService {
   ) {}
 
   async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, this.appConfig.password.salt_rounds);
+    return await bcrypt.hash(password, this.appConfig.auth.salt_rounds);
   }
 
   async comparePasswords(password: string, hashed: string): Promise<boolean> {

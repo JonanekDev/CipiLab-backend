@@ -6,6 +6,7 @@ import { UsersModule } from './modules/users/users.module';
 import { StatusModule } from './modules/status/status.module';
 import { SetupModule } from './modules/setup/setup.module';
 import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './database/prisma.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -18,6 +19,7 @@ import configuration from './config/configuration';
       isGlobal: true,
       load: [configuration],
     }),
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

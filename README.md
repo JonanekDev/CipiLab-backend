@@ -1,4 +1,4 @@
-# CipiLab
+# CipiLab - **In early development**
 Backend API for Cipilab — a self-hosted home server management platform.
 
 
