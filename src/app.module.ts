@@ -20,6 +20,7 @@ import configuration from './config/configuration';
       load: [configuration],
     }),
     PrismaModule,
+    
   ],
   controllers: [AppController],
   providers: [AppService],

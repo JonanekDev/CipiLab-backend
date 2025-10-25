@@ -8,11 +8,12 @@ import configuration from 'src/config/configuration';
 import { TokensService } from './tokens.service';
 import { UsersModule } from '../users/users.module';
 import { PrismaModule } from 'src/database/prisma.module';
+import { AuthGuard } from './auth.guard';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, TokensService],
-  exports: [PasswordService],
+  providers: [AuthService, PasswordService, TokensService, AuthGuard],
+  exports: [PasswordService, AuthGuard, JwtModule],
   imports: [
     JwtModule.registerAsync({
       imports: [ConfigModule],

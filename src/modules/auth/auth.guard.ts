@@ -1,25 +1,37 @@
 import { CanActivate, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
+import { ExecutionContext } from '@nestjs/common';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  protected optional: boolean = false;
 
-  async canActivate(context): Promise<boolean> {
+  constructor(
+    private jwtService: JwtService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
+      if (this.optional) {
+        request['userId'] = null;
+        return true;
+      }
       throw new UnauthorizedException('No access token provided');
     }
 
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      request['userid'] = payload;
-      console.log(payload);
+      request['userId'] = payload.userId;
       return true;
     } catch {
+      if (this.optional) {
+        request['userId'] = null;
+        return true;
+      }
       throw new UnauthorizedException('Invalid access token');
     }
   }

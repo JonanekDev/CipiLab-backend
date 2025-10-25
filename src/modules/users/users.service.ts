@@ -33,6 +33,14 @@ export class UsersService {
     });
   }
 
+  async findById(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
   async existsAtLeastOne(): Promise<boolean> {
     const count = await this.prisma.user.count();
     return count > 0;

@@ -18,6 +18,7 @@ export class TokensService {
   async generateUniqueRefreshToken(): Promise<string> {
     //TODO: hash refresh token
     while (true) {
+      console.log("1")
       //TODO: Is it ok?
       const token = randomBytes(64).toString('hex');
       const exists = await this.prisma.userSession.findUnique({
@@ -34,7 +35,7 @@ export class TokensService {
     userAgent: string,
   ): Promise<TokenRefreshResDto> {
     const newRefreshToken = await this.generateUniqueRefreshToken();
-    await this.prisma.userSession.create({
+    const session = await this.prisma.userSession.create({
       data: {
         userId,
         refreshToken: newRefreshToken,
@@ -52,7 +53,7 @@ export class TokensService {
 
     await this.prisma.userSessionAudit.create({
       data: {
-        sessionId: userId,
+        sessionId: session.id,
         action: 'LOGIN',
         ipAddress,
       },
@@ -70,6 +71,7 @@ export class TokensService {
     ipAddress: string,
     userAgent: string,
   ): Promise<TokenRefreshResDto> {
+    console.log(refreshToken);
     const userSession = await this.prisma.userSession.findUnique({
       where: { refreshToken },
     });
