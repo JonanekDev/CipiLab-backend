@@ -7,6 +7,9 @@ import { AppModule } from './app.module';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
+import type { FastifyCookie, FastifyCookieOptions } from '@fastify/cookie';
+import fastifyCookie from '@fastify/cookie';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -17,6 +20,9 @@ async function bootstrap() {
     }}
   );
   app.useGlobalPipes(new ValidationPipe());
+
+  const configService = app.get(ConfigService);
+  const appConfig = configService.get('app');
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('CIPILAB API')
@@ -32,6 +38,12 @@ async function bootstrap() {
     new ClassSerializerInterceptor(app.get(Reflector))
   );
 
-  await app.listen(process.env.API_PORT ?? 3000, '0.0.0.0');
+  await app.register(fastifyCookie as any, {
+    secret: appConfig.auth.cookie.secret,
+    httpOnly: true,
+    sameSite: 'strict',
+  });
+
+  await app.listen(appConfig.port, '127.0.0.1');
 }
 bootstrap();

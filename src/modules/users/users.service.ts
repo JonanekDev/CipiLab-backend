@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
-import { PasswordService } from '../auth/password.service';
+import { HashingService } from '../auth/hashing.service';
 import { User } from 'generated/prisma';
 
 @Injectable()
 export class UsersService {
   constructor(
     private prisma: PrismaService,
-    private passwordService: PasswordService,
+    private hashingService: HashingService,
   ) {}
 
   async createUser(
@@ -15,7 +15,7 @@ export class UsersService {
     email: string,
     password: string,
   ): Promise<User> {
-    const hashedPassword = await this.passwordService.hashPassword(password);
+    const hashedPassword = await this.hashingService.hash(password);
     return this.prisma.user.create({
       data: {
         email,
@@ -29,6 +29,14 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: {
         username,
+      },
+    });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
       },
     });
   }

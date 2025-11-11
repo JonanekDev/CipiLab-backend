@@ -5,49 +5,52 @@ import { JwtService } from '@nestjs/jwt';
 import configuration from 'src/config/configuration';
 import * as config from '@nestjs/config';
 import { PrismaService } from 'src/database/prisma.service';
+import { FastifyReply } from 'fastify/types/reply';
+import { HashingService } from './hashing.service';
 
 @Injectable()
 export class TokensService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly hashingService: HashingService,
     @Inject(configuration.KEY)
     private readonly appConfig: config.ConfigType<typeof configuration>,
   ) {}
 
   async generateUniqueRefreshToken(): Promise<string> {
-    //TODO: hash refresh token
-    while (true) {
-      console.log("1")
-      //TODO: Is it ok?
-      const token = randomBytes(64).toString('hex');
-      const exists = await this.prisma.userSession.findUnique({
-        where: { refreshToken: token },
-      });
+    const token = randomBytes(64).toString('hex');
 
-      if (!exists) return token;
-    }
+    return token;
   }
 
   async generateTokens(
     userId: number,
     ipAddress: string,
     userAgent: string,
-  ): Promise<TokenRefreshResDto> {
+    rememberMe: boolean,
+  ): Promise<{
+    accessToken: string;
+    sessionId: number;
+    refreshToken: string;
+    refreshExpiresAt: Date;
+  }> {
     const newRefreshToken = await this.generateUniqueRefreshToken();
+    const hashedRefreshToken = await this.hashingService.hash(newRefreshToken);
     const session = await this.prisma.userSession.create({
       data: {
         userId,
-        refreshToken: newRefreshToken,
+        refreshToken: hashedRefreshToken,
         expiresAt: new Date(
           Date.now() +
-            this.appConfig.auth.refreshToken_expiresIn_days *
+            this.appConfig.auth.refreshToken.expiresInDays *
               24 *
               60 *
               60 *
               1000,
         ),
         userAgent,
+        rememberMe,
       },
     });
 
@@ -63,21 +66,45 @@ export class TokensService {
     return {
       accessToken,
       refreshToken: newRefreshToken,
+      sessionId: session.id,
+      refreshExpiresAt: session.expiresAt,
     };
   }
 
   async refreshTokens(
     refreshToken: string,
+    sessionId: number,
     ipAddress: string,
     userAgent: string,
+    res: FastifyReply,
   ): Promise<TokenRefreshResDto> {
-    console.log(refreshToken);
     const userSession = await this.prisma.userSession.findUnique({
-      where: { refreshToken },
+      where: { id: sessionId },
     });
-    if (!userSession || userSession.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid refresh token');
+    if (
+      !userSession ||
+      userSession.revoked ||
+      userSession.expiresAt < new Date()
+    ) {
+      throw new UnauthorizedException('Invalid refresh token1');
     }
+
+    const lastActivity = Date.now() - userSession.updatedAt.getTime();
+    const idleLimit =
+      (userSession.rememberMe
+        ? this.appConfig.auth.refreshToken.idleExpiresInDays * 24 * 60
+        : this.appConfig.auth.refreshToken.tempIdleExpiresInMinutes) *
+      60 *
+      1000;
+
+    if (lastActivity > idleLimit) {
+      throw new UnauthorizedException('Invalid refresh toke2n');
+    }
+    console.log(refreshToken);
+    if (!(await this.hashingService.compare(refreshToken, userSession.refreshToken))) {
+      throw new UnauthorizedException('Invalid refresh token3');
+    }
+
     if (userSession.userAgent !== userAgent) {
       await this.prisma.userSession.update({
         where: { id: userSession.id },
@@ -94,11 +121,12 @@ export class TokensService {
     }
 
     const newRefreshToken = await this.generateUniqueRefreshToken();
+    const hashedNewRefreshToken = await this.hashingService.hash(newRefreshToken);
 
     // Update existing session with new refresh token
     await this.prisma.userSession.update({
       where: { id: userSession.id },
-      data: { refreshToken: newRefreshToken },
+      data: { refreshToken: hashedNewRefreshToken },
     });
 
     await this.prisma.userSessionAudit.create({
@@ -110,9 +138,36 @@ export class TokensService {
     });
 
     const accessToken = this.jwtService.sign({ userId: userSession.userId });
+    res.setCookie('refresh_token', newRefreshToken, {
+      expires: userSession.expiresAt,
+    });
     return {
       accessToken,
-      refreshToken: newRefreshToken,
+      sessionId: userSession.id,
     };
+  }
+
+  async logoutSession(refreshToken: string, sessionId: number, ipAddress: string, res: FastifyReply): Promise<void> {
+    const userSession = await this.prisma.userSession.findUnique({
+      where: { id: sessionId },
+    });
+    if (!userSession) {
+      throw new UnauthorizedException('Invalid session');
+    }
+    await this.hashingService.compare(refreshToken, userSession.refreshToken);
+
+    await this.prisma.userSession.update({
+      where: { id: userSession.id },
+      data: { revoked: true },
+    });
+
+    await this.prisma.userSessionAudit.create({
+      data: {
+        sessionId: userSession.id,
+        action: 'LOGOUT',
+        ipAddress,
+      },
+    });
+    res.clearCookie('refresh_token');
   }
 }

@@ -1,0 +1,7 @@
+import { TokenRefreshResDto } from './token-refresh.res.dto';
+import { UserEntity } from 'src/modules/users/user.entity';
+
+export class LoginResDto {
+  user: UserEntity;
+  session: TokenRefreshResDto;
+}

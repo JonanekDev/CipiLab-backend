@@ -8,6 +8,7 @@ import { SetupModule } from './modules/setup/setup.module';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './database/prisma.module';
 import configuration from './config/configuration';
+import { validationSchema } from './config/validation';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import configuration from './config/configuration';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+      validationSchema
     }),
     PrismaModule,
     

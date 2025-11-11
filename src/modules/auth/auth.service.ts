@@ -1,30 +1,33 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { PasswordService } from './password.service';
+import { HashingService } from './hashing.service';
 import { UsersService } from '../users/users.service';
 import { LoginReqDto } from './dto/login.req.dto';
 import { JwtService } from '@nestjs/jwt/dist/jwt.service';
 import { PrismaService } from 'src/database/prisma.service';
 import { TokensService } from './tokens.service';
+import { LoginResDto } from './dto/login.res.dto';
+import { UserEntity } from '../users/user.entity';
+import { FastifyReply } from 'fastify';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly passwordService: PasswordService,
+    private readonly hashingService: HashingService,
     private readonly tokensService: TokensService,
   ) {}
 
-  async login(dto: LoginReqDto, ipAddress: string, userAgent: string) {
-    const user = await this.usersService.findByUsername(dto.username);
+  async login(dto: LoginReqDto, ipAddress: string, userAgent: string, res: FastifyReply): Promise<LoginResDto> {
+    const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials U');
+      throw new UnauthorizedException('Invalid credentials');
     }
-    const passwordValid = await this.passwordService.comparePasswords(
+    const passwordValid = await this.hashingService.compare(
       dto.password,
       user.password,
     );
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials P');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // generate refresh and access tokens
@@ -32,10 +35,22 @@ export class AuthService {
       user.id,
       ipAddress,
       userAgent,
+      dto.rememberMe
     );
+
+    res.setCookie('refresh_token', tokens.refreshToken, {
+      expires: tokens.refreshExpiresAt,
+      httpOnly: true,
+      sameSite: 'strict',
+    });
+
     return {
-      user,
-      tokens,
+      user: new UserEntity(user),
+      session: {
+        sessionId: tokens.sessionId,
+        accessToken: tokens.accessToken,
+      },
     };
   }
+
 }

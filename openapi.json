@@ -62,7 +62,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenDto"
+                "$ref": "#/components/schemas/TokenRefreshReqDto"
               }
             }
           }
@@ -77,6 +77,30 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshReqDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
           }
         },
         "tags": [
@@ -143,46 +167,21 @@
       "LoginReqDto": {
         "type": "object",
         "properties": {
-          "username": {
-            "type": "string"
+          "email": {
+            "type": "string",
+            "format": "email"
           },
           "password": {
             "type": "string"
-          }
-        },
-        "required": [
-          "username",
-          "password"
-        ]
-      },
-      "LoginResDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "RefreshTokenDto": {
-        "type": "object",
-        "properties": {
-          "refreshToken": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
-      },
-      "TokenRefreshResDto": {
-        "type": "object",
-        "properties": {
-          "accessToken": {
-            "type": "string"
           },
-          "refreshToken": {
-            "type": "string"
+          "rememberMe": {
+            "type": "boolean"
           }
         },
         "required": [
-          "accessToken",
-          "refreshToken"
+          "email",
+          "password",
+          "rememberMe"
         ]
       },
       "UserEntity": {
@@ -195,9 +194,6 @@
             "type": "string"
           },
           "email": {
-            "type": "string"
-          },
-          "password": {
             "type": "string"
           },
           "createdAt": {
@@ -213,9 +209,49 @@
           "id",
           "username",
           "email",
-          "password",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "TokenRefreshResDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "number"
+          },
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "accessToken"
+        ]
+      },
+      "LoginResDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserEntity"
+          },
+          "session": {
+            "$ref": "#/components/schemas/TokenRefreshResDto"
+          }
+        },
+        "required": [
+          "user",
+          "session"
+        ]
+      },
+      "TokenRefreshReqDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "sessionId"
         ]
       },
       "StatusResponseDto": {

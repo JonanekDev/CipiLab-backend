@@ -4,17 +4,17 @@ import bcrypt from 'bcrypt';
 import configuration from 'src/config/configuration';
 
 @Injectable()
-export class PasswordService {
+export class HashingService {
   constructor(
     @Inject(configuration.KEY)
     private readonly appConfig: config.ConfigType<typeof configuration>,
   ) {}
 
-  async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, this.appConfig.auth.salt_rounds);
+  async hash(password: string): Promise<string> {
+    return await bcrypt.hash(password, this.appConfig.auth.saltRounds);
   }
 
-  async comparePasswords(password: string, hashed: string): Promise<boolean> {
+  async compare(password: string, hashed: string): Promise<boolean> {
     return await bcrypt.compare(password, hashed);
   }
 }

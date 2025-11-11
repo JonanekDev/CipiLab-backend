@@ -1,16 +1,22 @@
 import { registerAs } from '@nestjs/config';
 
+// Default are handled in validation schema
 export default registerAs('app', () => ({
-  port: parseInt(process.env.API_PORT ?? '3000', 10),
+  port: parseInt(process.env.API_PORT!, 10),
   auth: {
-    salt_rounds: parseInt(process.env.AUTH_SALT_ROUNDS ?? '12', 10), //15 too much, 12 is good enough? Maybe?
+    saltRounds: parseInt(process.env.AUTH_SALT_ROUNDS!, 10),
     jwt: {
-      secret: process.env.AUTH_JWT_SECRET ?? 'default_secret', // TODO: Random generation on first run
-      expiresIn: process.env.AUTH_JWT_EXPIRIES_IN ?? '60s',
+      secret: process.env.JWT_SECRET!,
+      expiresIn: process.env.JWT_EXPIRES!,
     },
-    refreshToken_expiresIn_days: parseInt(
-      process.env.AUTH_REFRESH_TOKEN_EXPIRIES_IN_DAYS ?? '7',
-      10,
-    ),
+    refreshToken: {
+      expiresInDays: parseInt(process.env.REFRESH_EXPIRES_DAYS!, 10),
+      idleExpiresInDays: parseInt(process.env.REFRESH_IDLE_EXPIRES_DAYS!, 10),
+      tempExpiresInHours: parseInt(process.env.REFRESH_TMP_EXPIRES_HOURS!, 10),
+      tempIdleExpiresInMinutes: parseInt(process.env.REFRESH_TMP_IDLE_EXPIRES_MINUTES!, 10),
+    },
+    cookie: {
+      secret: process.env.COOKIE_SECRET!,
+    },
   },
 }));

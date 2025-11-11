@@ -6,9 +6,6 @@ export class UserEntity {
     username: string;
     email: string;
 
-    @Exclude()
-    password: string;
-
     createdAt: Date;
     updatedAt: Date;
 
