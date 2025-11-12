@@ -20,10 +20,19 @@ model User {
   username String @unique
   password String
 
+  role      UserRole   @default(USER)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   sessions UserSession[]
+}
+
+enum UserRole {
+  FULL_ADMIN
+  SERVICES_ADMIN
+  VIEWONLY_ADMIN
+  USER
 }
 
 model UserSession {
@@ -37,7 +46,7 @@ model UserSession {
   expiresAt    DateTime
   revoked      Boolean  @default(false)
 
-  user   User               @relation(fields: [userId], references: [id])
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   audits UserSessionAudit[]
 
   @@index([userId])
@@ -51,7 +60,7 @@ model UserSessionAudit {
   ipAddress String
   createdAt DateTime          @default(now())
 
-  userSession UserSession @relation(fields: [sessionId], references: [id])
+  userSession UserSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
 }
@@ -62,4 +71,17 @@ enum UserSessionAction {
   LOGOUT
   REVOKE_USER
   REVOKE_SYSTEM
+}
+
+model Setting {
+  key   SettingKey @id
+  value String
+}
+
+enum SettingKey {
+  serverName
+  smtpHost
+  smtpPort
+  smtpUser
+  smtpPassword
 }

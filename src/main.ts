@@ -14,7 +14,9 @@ import { ConfigService } from '@nestjs/config';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    new FastifyAdapter({
+      trustProxy: true,   //For nginx proxy 
+    }),
     { cors: {
       origin: '*', //TODO: CHANGE
     }}

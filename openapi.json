@@ -108,6 +108,30 @@
         ]
       }
     },
+    "/user/changepassword": {
+      "post": {
+        "operationId": "UsersController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordReqDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
     "/status": {
       "get": {
         "operationId": "StatusController_getStatus",
@@ -138,7 +162,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InitDashboardDto"
+                "$ref": "#/components/schemas/InitDashboardReqDto"
               }
             }
           }
@@ -184,9 +208,25 @@
           "rememberMe"
         ]
       },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "FULL_ADMIN",
+          "SERVICES_ADMIN",
+          "VIEWONLY_ADMIN",
+          "USER"
+        ]
+      },
       "UserEntity": {
         "type": "object",
         "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
           "id": {
             "type": "number"
           },
@@ -206,6 +246,7 @@
           }
         },
         "required": [
+          "role",
           "id",
           "username",
           "email",
@@ -254,11 +295,32 @@
           "sessionId"
         ]
       },
+      "ChangePasswordReqDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[\\W_]).+$/"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
       "StatusResponseDto": {
         "type": "object",
         "properties": {
           "setupCompleted": {
             "type": "boolean"
+          },
+          "serverName": {
+            "type": "string"
           },
           "user": {
             "$ref": "#/components/schemas/UserEntity"
@@ -268,27 +330,34 @@
           "setupCompleted"
         ]
       },
-      "InitDashboardDto": {
+      "InitDashboardReqDto": {
         "type": "object",
         "properties": {
-          "dashboardName": {
-            "type": "string"
-          },
-          "username": {
+          "serverName": {
             "type": "string",
             "minLength": 3,
             "maxLength": 30
           },
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 30,
+            "pattern": "/^[a-zA-Z0-9_]+$/"
+          },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "pattern": "/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[\\W_]).+$/"
           }
         },
         "required": [
-          "dashboardName",
+          "serverName",
           "username",
           "email",
           "password"

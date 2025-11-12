@@ -1,6 +1,7 @@
-# CipiLab - **In early development**
+# CipiLab Backend
 Backend API for Cipilab — a self-hosted home server management platform.
 
+🚧 **Work in Progress** 🚧
 
 ## 🚧 Planned features
 - Simple service creation and management using Docker containers
@@ -28,6 +29,10 @@ Backend API for Cipilab — a self-hosted home server management platform.
 ## 🛠️ Technologies
 - [Nest.js](https://nestjs.com/) - Backend framework
 - [Prisma](https://www.prisma.io/) - Database
+
+## 📋 Requirements
+- Running Postgres database
+
 
 ## Project setup
 

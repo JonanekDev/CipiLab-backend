@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { HashingService } from '../auth/hashing.service';
-import { User } from 'generated/prisma';
+import { User, UserRole } from 'generated/prisma';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +14,7 @@ export class UsersService {
     username: string,
     email: string,
     password: string,
+    role: UserRole = UserRole.USER,
   ): Promise<User> {
     const hashedPassword = await this.hashingService.hash(password);
     return this.prisma.user.create({
@@ -21,6 +22,7 @@ export class UsersService {
         email,
         username,
         password: hashedPassword,
+        role: role,
       },
     });
   }
@@ -52,5 +54,13 @@ export class UsersService {
   async existsAtLeastOne(): Promise<boolean> {
     const count = await this.prisma.user.count();
     return count > 0;
+  }
+
+  async changePassword(userId: number, newPassword: string): Promise<void> {
+    const hashedPassword = await this.hashingService.hash(newPassword);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
   }
 }

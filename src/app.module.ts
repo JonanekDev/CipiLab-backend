@@ -9,6 +9,8 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './database/prisma.module';
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
+import { SettingsModule } from './modules/settings/settings.module';
+import { SettingsService } from './modules/settings/settings.service';
 
 @Module({
   imports: [
@@ -22,9 +24,10 @@ import { validationSchema } from './config/validation';
       validationSchema
     }),
     PrismaModule,
+    SettingsModule,
     
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SettingsService],
 })
 export class AppModule {}
