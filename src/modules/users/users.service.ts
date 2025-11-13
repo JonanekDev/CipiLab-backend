@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { HashingService } from '../auth/hashing.service';
-import { User, UserRole } from 'generated/prisma';
+import { User, UserRole, UserSession } from 'generated/prisma';
+import { ChangePasswordReqDto } from './dto/changepassword.req.dto';
+import { UpdateProfileReqDto } from './dto/update-profile.req.dto';
 
 @Injectable()
 export class UsersService {
@@ -56,11 +58,40 @@ export class UsersService {
     return count > 0;
   }
 
-  async changePassword(userId: number, newPassword: string): Promise<void> {
-    const hashedPassword = await this.hashingService.hash(newPassword);
+  async changePassword(userId: number,  dto: ChangePasswordReqDto): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const isCurrentPasswordValid = await this.hashingService.compare(
+      dto.currentPassword,
+      user.password,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+    const hashedPassword = await this.hashingService.hash(dto.password);
     await this.prisma.user.update({
       where: { id: userId },
       data: { password: hashedPassword },
     });
   }
+
+  async updateProfile(userId: number, dto: UpdateProfileReqDto): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        username: dto.username,
+        email: dto.email,
+      },
+    })
+  }
+
+  async getActiveSessions(userId: number): Promise<UserSession[]> {
+    const sessions = await this.prisma.userSession.findMany({
+      where: { userId, revoked: false, expiresAt: { gt: new Date() } },
+    });
+    return sessions;
+  }
+
 }
