@@ -2,14 +2,16 @@ import { CanActivate, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
 import { ExecutionContext } from '@nestjs/common';
+import {
+  InvalidTokenException,
+  MissingTokenException,
+} from 'src/common/exceptions/auth.exceptions';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   protected optional: boolean = false;
 
-  constructor(
-    private jwtService: JwtService,
-  ) {}
+  constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -20,7 +22,7 @@ export class AuthGuard implements CanActivate {
         request['userId'] = null;
         return true;
       }
-      throw new UnauthorizedException('No access token provided');
+      throw new MissingTokenException();
     }
 
     try {
@@ -32,7 +34,7 @@ export class AuthGuard implements CanActivate {
         request['userId'] = null;
         return true;
       }
-      throw new UnauthorizedException('Invalid access token');
+      throw new InvalidTokenException('access');
     }
   }
 

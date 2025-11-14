@@ -13,7 +13,10 @@ export default registerAs('app', () => ({
       expiresInDays: parseInt(process.env.REFRESH_EXPIRES_DAYS!, 10),
       idleExpiresInDays: parseInt(process.env.REFRESH_IDLE_EXPIRES_DAYS!, 10),
       tempExpiresInHours: parseInt(process.env.REFRESH_TMP_EXPIRES_HOURS!, 10),
-      tempIdleExpiresInMinutes: parseInt(process.env.REFRESH_TMP_IDLE_EXPIRES_MINUTES!, 10),
+      tempIdleExpiresInMinutes: parseInt(
+        process.env.REFRESH_TMP_IDLE_EXPIRES_MINUTES!,
+        10,
+      ),
     },
     cookie: {
       secret: process.env.COOKIE_SECRET!,

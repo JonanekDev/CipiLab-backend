@@ -6,8 +6,9 @@ import { JwtService } from '@nestjs/jwt/dist/jwt.service';
 import { PrismaService } from 'src/database/prisma.service';
 import { TokensService } from './tokens.service';
 import { LoginResDto } from './dto/login.res.dto';
-import { UserEntity } from '../users/user.entity';
+import { UserEntity } from '../users/entities/user.entity';
 import { FastifyReply } from 'fastify';
+import { InvalidCredentialsException } from 'src/common/exceptions/auth.exceptions';
 
 @Injectable()
 export class AuthService {
@@ -17,17 +18,22 @@ export class AuthService {
     private readonly tokensService: TokensService,
   ) {}
 
-  async login(dto: LoginReqDto, ipAddress: string, userAgent: string, res: FastifyReply): Promise<LoginResDto> {
+  async login(
+    dto: LoginReqDto,
+    ipAddress: string,
+    userAgent: string,
+    res: FastifyReply,
+  ): Promise<LoginResDto> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
     const passwordValid = await this.hashingService.compare(
       dto.password,
       user.password,
     );
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     // generate refresh and access tokens
@@ -35,7 +41,7 @@ export class AuthService {
       user.id,
       ipAddress,
       userAgent,
-      dto.rememberMe
+      dto.rememberMe,
     );
 
     res.setCookie('refresh_token', tokens.refreshToken, {
@@ -52,5 +58,4 @@ export class AuthService {
       },
     };
   }
-
 }

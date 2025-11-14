@@ -7,6 +7,10 @@ import * as config from '@nestjs/config';
 import { PrismaService } from 'src/database/prisma.service';
 import { FastifyReply } from 'fastify/types/reply';
 import { HashingService } from './hashing.service';
+import {
+  InvalidTokenException,
+  TokenExpiredException,
+} from 'src/common/exceptions/auth.exceptions';
 
 @Injectable()
 export class TokensService {
@@ -81,12 +85,8 @@ export class TokensService {
     const userSession = await this.prisma.userSession.findUnique({
       where: { id: sessionId },
     });
-    if (
-      !userSession ||
-      userSession.revoked ||
-      userSession.expiresAt < new Date()
-    ) {
-      throw new UnauthorizedException('Invalid refresh token1');
+    if (!userSession) {
+      throw new InvalidTokenException('refresh');
     }
 
     const lastActivity = Date.now() - userSession.updatedAt.getTime();
@@ -97,12 +97,20 @@ export class TokensService {
       60 *
       1000;
 
-    if (lastActivity > idleLimit) {
-      throw new UnauthorizedException('Invalid refresh toke2n');
+    if (
+      lastActivity > idleLimit ||
+      userSession.revoked ||
+      userSession.expiresAt < new Date()
+    ) {
+      throw new TokenExpiredException('refresh');
     }
-    console.log(refreshToken);
-    if (!(await this.hashingService.compare(refreshToken, userSession.refreshToken))) {
-      throw new UnauthorizedException('Invalid refresh token3');
+    if (
+      !(await this.hashingService.compare(
+        refreshToken,
+        userSession.refreshToken,
+      ))
+    ) {
+      throw new InvalidTokenException('refresh');
     }
 
     if (userSession.userAgent !== userAgent) {
@@ -117,11 +125,12 @@ export class TokensService {
           ipAddress,
         },
       });
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new TokenExpiredException('refresh');
     }
 
     const newRefreshToken = await this.generateUniqueRefreshToken();
-    const hashedNewRefreshToken = await this.hashingService.hash(newRefreshToken);
+    const hashedNewRefreshToken =
+      await this.hashingService.hash(newRefreshToken);
 
     // Update existing session with new refresh token
     await this.prisma.userSession.update({
@@ -147,14 +156,27 @@ export class TokensService {
     };
   }
 
-  async logoutSession(refreshToken: string, sessionId: number, ipAddress: string, res: FastifyReply): Promise<void> {
+  async logoutSession(
+    refreshToken: string,
+    sessionId: number,
+    ipAddress: string,
+    res: FastifyReply,
+  ): Promise<void> {
     const userSession = await this.prisma.userSession.findUnique({
       where: { id: sessionId },
     });
-    if (!userSession) {
-      throw new UnauthorizedException('Invalid session');
+    if (
+      !userSession ||
+      !(await this.hashingService.compare(
+        refreshToken,
+        userSession.refreshToken,
+      ))
+    ) {
+      throw new InvalidTokenException('refresh');
     }
-    await this.hashingService.compare(refreshToken, userSession.refreshToken);
+    if (userSession.revoked || userSession.expiresAt < new Date()) {
+      throw new TokenExpiredException('refresh');
+    }
 
     await this.prisma.userSession.update({
       where: { id: userSession.id },

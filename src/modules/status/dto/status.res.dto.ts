@@ -1,7 +1,7 @@
-import { UserEntity } from "src/modules/users/user.entity";
+import { UserEntity } from 'src/modules/users/entities/user.entity';
 
 export class StatusResponseDto {
-    setupCompleted: boolean;
-    serverName?: string;
-    user?: UserEntity;
+  setupCompleted: boolean;
+  serverName?: string;
+  user?: UserEntity;
 }

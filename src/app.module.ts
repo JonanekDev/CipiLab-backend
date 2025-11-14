@@ -11,6 +11,7 @@ import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
 import { SettingsModule } from './modules/settings/settings.module';
 import { SettingsService } from './modules/settings/settings.service';
+import { ServicesModule } from './modules/services/services.module';
 
 @Module({
   imports: [
@@ -21,11 +22,11 @@ import { SettingsService } from './modules/settings/settings.service';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
-      validationSchema
+      validationSchema,
     }),
     PrismaModule,
     SettingsModule,
-    
+    ServicesModule,
   ],
   controllers: [AppController],
   providers: [AppService, SettingsService],

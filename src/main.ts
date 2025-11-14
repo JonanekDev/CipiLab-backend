@@ -4,24 +4,51 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  ConsoleLogger,
+  ValidationPipe,
+} from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
-import type { FastifyCookie, FastifyCookieOptions } from '@fastify/cookie';
 import fastifyCookie from '@fastify/cookie';
 import { ConfigService } from '@nestjs/config';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ValidationError } from 'class-validator';
+import { ValidationException } from './common/exceptions/validation.exception';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      trustProxy: true,   //For nginx proxy 
+      trustProxy: true, //For nginx proxy
     }),
-    { cors: {
-      origin: '*', //TODO: CHANGE
-    }}
+    {
+      logger: new ConsoleLogger({
+        prefix: 'CIPILAB',
+        timestamp: true,
+      }),
+      cors: {
+        origin: '*', //TODO: CHANGE
+      },
+    },
   );
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        return new ValidationException(
+          validationErrors.map((error) => {
+            const constraints = error.constraints
+              ? Object.values(error.constraints)
+              : [];
+            return `${error.property}: ${constraints.join(', ')}`;
+          }),
+        );
+      },
+    }),
+  );
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const configService = app.get(ConfigService);
   const appConfig = configService.get('app');
@@ -36,9 +63,7 @@ async function bootstrap() {
 
   writeFileSync('./openapi.json', JSON.stringify(document, null, 2));
 
-  app.useGlobalInterceptors(
-    new ClassSerializerInterceptor(app.get(Reflector))
-  );
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   await app.register(fastifyCookie as any, {
     secret: appConfig.auth.cookie.secret,
